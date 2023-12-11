@@ -1,9 +1,9 @@
 class SharesController < ApplicationController
   before_action :authenticate_user!
   before_action :set_password
+  before_action :require_shareable_permissions
 
   def new
-    @users = User.excluding(@password.usersf)
     @user_password = UserPassword.new
   end
 
@@ -12,7 +12,8 @@ class SharesController < ApplicationController
     if @user_password.save
       redirect_to @password, notice: 'Password was successfully shared.'
     else
-      render :new, status: :unprocessable_entity
+      @users = User.excluding(@password.users)
+      render  :new, status: :unprocessable_entity
     end
   end
 
@@ -29,7 +30,11 @@ class SharesController < ApplicationController
   end
 
   def user_password_params
-    params.require(:user_password).permit(:user_id)
+    params.require(:user_password).permit(:user_id, :role)
+  end
+
+  def require_shareable_permissions
+    redirect_to @password unless current_user_password.shareable?
   end
 
 end
